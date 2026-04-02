@@ -1,19 +1,19 @@
 from flask import Flask, render_template, request
 from transformers import pipeline
-import os
 
 app = Flask(__name__)
 
-# Load DistilBERT model
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-MODEL_DIR = os.path.join(BASE_DIR, "distilbert_model")
-
+# 🔥 Load model from Hugging Face (NOT local)
 try:
-    # Using pipeline for easy inference
-    classifier = pipeline("text-classification", model=MODEL_DIR, tokenizer=MODEL_DIR)
+    classifier = pipeline(
+        "text-classification",
+        model="trishnaa-paswan/stress-detection-model",
+        tokenizer="trishnaa-paswan/stress-detection-model",
+        device=-1  # CPU (safe for Render)
+    )
 except Exception as e:
     classifier = None
-    print(f"Error loading DistilBERT: {e}")
+    print(f"Error loading model: {e}")
 
 @app.route("/", methods=["GET", "POST"])
 def home():
@@ -28,23 +28,21 @@ def home():
             return render_template("index.html", prediction="Error: Model not loaded", mood_color=mood_color)
 
         text = request.form.get("text", "").strip()
-        duration = request.form.get("duration", "")
         cause = request.form.get("cause", "")
         detailed = request.form.get("detailed_reason", "").strip()
 
         if not text and not detailed:
             return render_template("index.html", prediction="Please write something first!", mood_color=mood_color)
 
-        # ✅ Use ALL inputs as requested
-        final_input = f"{text} {detailed} {duration} {cause}".strip()
+        # ✅ CLEAN INPUT (no duration)
+        final_input = f"{text}. {detailed}. Cause: {cause}".strip()
 
-        # 🔮 Predict using DistilBERT
+        # 🔮 Prediction
         result = classifier(final_input)[0]
         label_id = result['label']
         confidence = round(result['score'] * 100, 2)
 
-        # 🎯 Refined Mental Health Mapping (7-Class DistilBERT)
-        # 0: Anxiety, 1: Bipolar, 2: Depression, 3: Normal, 4: Personality, 5: Stress, 6: Suicidal
+        # 🎯 Label Mapping
         label_map = {
             "LABEL_0": {"word": "Anxiety", "icon": "🌪️", "color": "text-red-400"},
             "LABEL_1": {"word": "Bipolar Disorder", "icon": "🎭", "color": "text-red-400"},
@@ -54,12 +52,10 @@ def home():
             "LABEL_5": {"word": "Stress", "icon": "💼", "color": "text-red-400"},
             "LABEL_6": {"word": "Suicidal Thoughts", "icon": "🆘", "color": "text-red-600 font-bold"}
         }
-        
-        # Keyword-based override for better "satisfaction"
-        # If the model is unsure (LABEL_3 is often a catch-all), we check for strong keywords
+
+        # 🔁 Smart override
         low_confidence = result['score'] < 0.8
-        detected_word = label_map.get(label_id, {"word": label_id})["word"]
-        
+
         if label_id == "LABEL_3" or low_confidence:
             check_text = final_input.lower()
             if any(w in check_text for w in ["stress", "overwhelmed", "workload", "pressure"]):
@@ -75,21 +71,21 @@ def home():
         mood_word = mapped_data["word"]
         mood_icon = mapped_data["icon"]
         mood_color = mapped_data["color"]
-        
+
         prediction = f"{mood_icon} {mood_word}"
-        
-        # 💬 Smarter, more empathetic responses
-        if mood_word == "Healthy/Normal":
-            message = "You seem to be in a balanced state. It's great to check in on yourself! Keep prioritizing your peace ✨"
+
+        # 💬 Response
+        if mood_word == "Normal":
+            message = "You seem to be in a balanced state. Keep prioritizing your peace ✨"
         elif mood_word == "Suicidal Thoughts":
-            message = "URGENT: Your life is incredibly valuable. Please reach out to a professional or a crisis helpline immediately. Help is available 24/7 💜"
+            message = "URGENT: Please reach out to a professional or helpline immediately 💜"
         elif mood_word == "Stress":
-            message = "You're carrying a heavy load. Remember to take small breaks and breathe. You don't have to do it all at once 💼"
+            message = "You're carrying a lot. Take small breaks and breathe 💼"
         else:
-            message = f"It sounds like you're experiencing {mood_word.lower()}. Be gentle with yourself today—you're doing your best 💜"
+            message = f"It sounds like you're experiencing {mood_word.lower()}. Be gentle with yourself 💜"
 
         # 📊 Insight
-        insight = f"Context: {cause} | Timeframe: {duration}"
+        insight = f"Context: {cause}"
 
     return render_template(
         "index.html",
@@ -100,7 +96,6 @@ def home():
         mood_color=mood_color,
         user_text=text if request.method == "POST" else "",
         user_detailed=detailed if request.method == "POST" else "",
-        user_duration=duration if request.method == "POST" else "",
         user_cause=cause if request.method == "POST" else ""
     )
 
