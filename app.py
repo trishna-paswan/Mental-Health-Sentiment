@@ -49,7 +49,7 @@ def home():
             "LABEL_0": {"word": "Anxiety", "icon": "🌪️", "color": "text-red-400"},
             "LABEL_1": {"word": "Bipolar Disorder", "icon": "🎭", "color": "text-red-400"},
             "LABEL_2": {"word": "Depression", "icon": "🌧️", "color": "text-red-400"},
-            "LABEL_3": {"word": "Healthy/Normal", "icon": "🌿", "color": "text-green-400"},
+            "LABEL_3": {"word": "Normal", "icon": "🌿", "color": "text-green-400"},
             "LABEL_4": {"word": "Personality Disorder", "icon": "🧩", "color": "text-red-400"},
             "LABEL_5": {"word": "Stress", "icon": "💼", "color": "text-red-400"},
             "LABEL_6": {"word": "Suicidal Thoughts", "icon": "🆘", "color": "text-red-600 font-bold"}
