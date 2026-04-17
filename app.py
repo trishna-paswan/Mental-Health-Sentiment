@@ -57,14 +57,23 @@ def home():
         low_confidence = result['score'] < 0.8
 
         if label_id == "LABEL_3" or low_confidence:
+            import re
+            def has_word(text, words):
+                for w in words:
+                    # Use regex for word boundaries, but handle multi-word phrases
+                    pattern = rf"\b{re.escape(w)}\b"
+                    if re.search(pattern, text, re.IGNORECASE):
+                        return True
+                return False
+
             check_text = final_input.lower()
-            if any(w in check_text for w in ["stress", "overwhelmed", "workload", "pressure"]):
+            if has_word(check_text, ["stress", "stressed", "stressful", "overwhelmed", "workload", "pressure"]):
                 label_id = "LABEL_5"
-            elif any(w in check_text for w in ["depressed", "sad", "unhappy", "lonely", "hopeless"]):
+            elif has_word(check_text, ["depressed", "depression", "sad", "unhappy", "lonely", "hopeless"]):
                 label_id = "LABEL_2"
-            elif any(w in check_text for w in ["anxious", "panic", "worry", "nervous"]):
+            elif has_word(check_text, ["anxious", "anxiety", "panic", "worry", "nervous"]):
                 label_id = "LABEL_0"
-            elif any(w in check_text for w in ["die", "kill", "end it", "suicide"]):
+            elif has_word(check_text, ["die", "killing", "kill", "suicide", "suicidal", "end it"]):
                 label_id = "LABEL_6"
 
         mapped_data = label_map.get(label_id, {"word": label_id, "icon": "🔍", "color": "text-white"})
